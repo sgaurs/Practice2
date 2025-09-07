@@ -93,7 +93,7 @@ stages:
     displayName: TerraformInitApply
     pool: SumitAgentPool
     dependsOn: C
-    condition: and(succeeded(), eq(variables['Build.SourceBranch'],'refs/heads/main')
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'],'refs/heads/main'))
     jobs:
       - job: TerraformInitApply
         displayName: TerraformInitApply_krenge
