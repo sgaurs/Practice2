@@ -1,0 +1,139 @@
+name: Stage_based_pipeline
+
+trigger:
+  branches:
+    include:
+      - main
+
+pr:
+  branches:
+    include:
+      - main
+
+variables:
+  PWD: '$(System.DefaultWorkingDirectory)/Master/'
+  WFI: 'SumitFedredatedIdentityNew'
+
+stages:
+  - stage: A
+    displayName: TerraformInitfmtvalplan
+    pool: SumitAgentPool
+    jobs:
+      - job: TerraformInitfmtvalplan_krenge
+        displayName: Terraform-Init_fmt_Val_Plan
+        steps:
+        - task: TerraformTask@5
+          displayName: Terraform-Init
+          inputs:
+            provider: 'azurerm'
+            command: 'init'
+            workingDirectory: '$(PWD)'
+            backendServiceArm: '$(WFI)'
+            backendAzureRmStorageAccountName: 'sumitvatsstorage1'
+            backendAzureRmContainerName: 'tfstate'
+            backendAzureRmKey: 'practice2.tfstate'
+
+        - task: TerraformTask@5
+          displayName: Terraform-Fmt
+          inputs:
+            provider: 'azurerm'
+            command: 'custom'
+            workingDirectory: '$(PWD)'
+            outputTo: 'console'
+            customCommand: 'fmt'
+            environmentServiceNameAzureRM: '$(WFI)'
+
+        - task: TerraformTask@5
+          displayName: Terraform-Val
+          inputs:
+            provider: 'azurerm'
+            command: 'validate'
+            workingDirectory: '$(PWD)'
+
+        - task: TerraformTask@5
+          displayName: Terraform-Plan
+          inputs:
+            provider: 'azurerm'
+            command: 'plan'
+            workingDirectory: '$(PWD)'
+            environmentServiceNameAzureRM: '$(WFI)'
+
+
+  - stage: B
+    displayName: tfsec_scanning
+    pool: SumitAgentPool
+    dependsOn: A
+    condition: succeeded()
+    jobs:
+      - job: tfsec_scanning_krenge
+        steps:
+        - task: tfsec@1
+          displayName: tfsec_scan
+          inputs:
+            version: 'v1.26.0'
+            dir: '$(System.DefaultWorkingDirectory)'
+
+  - stage: C
+    displayName: Manual_Validation
+    pool: server
+    dependsOn: B
+    condition: always()
+    jobs:
+      - job: Manual_Validation_krenge
+        displayName: Manual_Validate
+        steps:
+        - task: ManualValidation@1
+          displayName: Manual_Validation
+          inputs:
+            notifyUsers: 'Sumit@kuilasourav1999gmail.onmicrosoft.com'
+            approvers: 'Sumit@kuilasourav1999gmail.onmicrosoft.com'
+
+
+  - stage: D
+    displayName: TerraformInitApply
+    pool: SumitAgentPool
+    dependsOn: C
+    condition: succeeded()
+    jobs:
+      - job: TerraformInitApply
+        displayName: TerraformInitApply_krenge
+        steps:
+        - task: TerraformTask@5
+          displayName: Terraform-Init
+          inputs:
+            provider: 'azurerm'
+            command: 'init'
+            workingDirectory: '$(PWD)'
+            backendServiceArm: '$(WFI)'
+            backendAzureRmStorageAccountName: 'sumitvatsstorage1'
+            backendAzureRmContainerName: 'tfstate'
+            backendAzureRmKey: 'practice2.tfstate'
+
+        - task: TerraformTask@5
+          displayName: Terraform-Apply
+          inputs:
+            provider: 'azurerm'
+            command: 'apply'
+            workingDirectory: '$(PWD)'
+            commandOptions: '--auto-approve'
+            environmentServiceNameAzureRM: '$(WFI)'
+
+        - task: TerraformTask@5
+          displayName: Terraform-State-Show
+          inputs:
+            provider: 'azurerm'
+            command: 'show'
+            workingDirectory: '$(PWD)'
+            outputTo: 'console'
+            outputFormat: 'default'
+            environmentServiceNameAzureRM: '$(WFI)'
+
+        - task: TerraformTask@5
+          displayName: Terraform-Destroy
+          inputs:
+            provider: 'azurerm'
+            command: 'destroy'
+            workingDirectory: '$(PWD)'
+            environmentServiceNameAzureRM: '$(WFI)'
+
+        
