@@ -18,5 +18,3 @@ module "storage_container" {
   sa_name = "abhistorage1"
   sc_name = "tfstate"
 }
-
-#
