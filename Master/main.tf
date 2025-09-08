@@ -18,11 +18,3 @@ module "storage_container" {
   sa_name = "abhistorage1"
   sc_name = "tfstate"
 }
-
-module "storage_container1" {
-  source     = "../Azurerm_storage_container"
-  depends_on = [module.storage_account]
-  rg_name  = "B17_G3_TEST"
-  sa_name = "abhistorage1"
-  sc_name = "tfstate1"
-}
